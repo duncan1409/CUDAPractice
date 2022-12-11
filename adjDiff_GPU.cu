@@ -41,10 +41,17 @@ int main()
 	pResult[0] = 0.0F;
 	cudaMalloc((void **)&pSourceDev, TOTALSIZE * sizeof(float));
 	cudaMalloc((void **)&pResultDev, TOTALSIZE * sizeof(float));
+	//CUDA mem cpy from host to device
+	cudaMemcpy(pSourceDev, pSource, TOTALSIZE * sizeof(float), cudaMemcpyHostToDevice);
 	// start the timer
-	QueryPerformanceFrequency((LARGE_INTEGER *)(&cntStart));
-	adjDiff(pResult, pSource, TOTALSIZE);
+	QueryPerformanceCounter((LARGE_INTEGER *)(&cntStart));
+	//CUDA launch the kernel adjDiff
+	dim3 dimGrid(GRIDSIZE, 1, 1);
+	dim3 dimBlock(BLOCKSIZE, 1, 1);
+	adjDiff<<<dimGrid, dimBlock>>>(pResultDev, pSourceDev);
 	QueryPerformanceCounter((LARGE_INTEGER *)(&cntEnd));
+	//CUDA memcpy from device to host
+	cudaMemcpy(pResult, pResultDev, TOTALSIZE * sizeof(float), cudaMemcpyDeviceToHost);
 	printf("elapsed time = %f usec\n", (double)(cntEnd - cntStart) * 1000000.0 / (double)(freq));
 
 	// print sample cases
